@@ -36,6 +36,48 @@ void upload_file(int sock, const char *file_path) {
     }
 }
 
+void download_file(int sock, const char *file_name) {
+    char command[1024];
+    snprintf(command, sizeof(command), "$DOWNLOAD$%s$", file_name);
+    send(sock, command, strlen(command), 0);
+
+    // Receive initial response from the server
+    char response[1024] = {0};
+    int bytes_read = read(sock, response, sizeof(response) - 1);
+    response[bytes_read] = '\0';  // Null-terminate the response
+
+    if (strcmp(response, "$FAILURE$FILE_NOT_FOUND$") == 0) {
+        printf("Server Response: %s\n", response);
+        return;
+    } else if (strncmp(response, "$SUCCESS$", 9) == 0) {
+        char file_path[1024];
+        snprintf(file_path, sizeof(file_path), "/home/%s/Downloads/%s", getenv("USER"), file_name);
+
+        FILE *file = fopen(file_path, "wb");
+        if (!file) {
+            perror("File open failed");
+            return;
+        }
+
+        printf("Downloading file: %s\n", file_path);
+
+        char buffer[1024];
+        // Handle file content separately after the $SUCCESS$ message
+        memmove(buffer, response + 9, bytes_read - 9);  // Move leftover data after $SUCCESS$
+        fwrite(buffer, 1, bytes_read - 9, file);
+
+        // Read the rest of the file content from the socket
+        while ((bytes_read = read(sock, buffer, sizeof(buffer))) > 0) {
+            fwrite(buffer, 1, bytes_read, file);
+        }
+
+        fclose(file);
+        printf("File downloaded successfully to %s\n", file_path);
+    } else {
+        printf("Unexpected server response: %s\n", response);
+    }
+}
+
 int main() {
     int sock = 0;
     struct sockaddr_in serv_addr;
@@ -58,15 +100,25 @@ int main() {
         return -1;
     }
 
-    char file_path[1024];
-    printf("Enter the path of the file to upload: ");
-    fgets(file_path, sizeof(file_path), stdin);
-    file_path[strcspn(file_path, "\n")] = 0;  // Remove the newline character
+    char operation[10];
+    printf("Enter operation (upload/download): ");
+    fgets(operation, sizeof(operation), stdin);
+    operation[strcspn(operation, "\n")] = 0;  // Remove the newline character
 
-    // Upload the file specified by the user
-    upload_file(sock, file_path);
+    if (strcmp(operation, "upload") == 0) {
+        char file_path[1024];
+        printf("Enter the path of the file to upload: ");
+        fgets(file_path, sizeof(file_path), stdin);
+        file_path[strcspn(file_path, "\n")] = 0;  // Remove the newline character
+        upload_file(sock, file_path);
+    } else if (strcmp(operation, "download") == 0) {
+        char file_name[1024];
+        printf("Enter the name of the file to download: ");
+        fgets(file_name, sizeof(file_name), stdin);
+        file_name[strcspn(file_name, "\n")] = 0;  // Remove the newline character
+        download_file(sock, file_name);
+    }
 
     close(sock);
-
     return 0;
 }

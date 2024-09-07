@@ -14,7 +14,6 @@ struct client_info {
 } client;
 
 void handle_upload(int new_socket, char *command) {
-    // Extract the file path from the command string
     char *file_path = strtok(command, "$");
     file_path = strtok(NULL, "$");
 
@@ -25,13 +24,17 @@ void handle_upload(int new_socket, char *command) {
     
     send(new_socket, "$SUCCESS$", strlen("$SUCCESS$"), 0);
 
-    // Create or use the `./server` directory
+    char *base_name = strrchr(file_path, '/');
+    if (!base_name) {
+        base_name = file_path;  // No '/' found, use the full path as the name
+    } else {
+        base_name++;  // Skip the '/'
+    }
+
     const char *dir = "./server_dir";
     mkdir(dir, 0777);
-
-    // Construct the full path to store the file in the `./server` directory
     char full_path[1024];
-    snprintf(full_path, sizeof(full_path), "%s/%s", dir, file_path);
+    snprintf(full_path, sizeof(full_path), "%s/%s", dir, base_name);
 
     FILE *file = fopen(full_path, "wb");
     if (!file) {
@@ -55,14 +58,43 @@ void handle_upload(int new_socket, char *command) {
     send(new_socket, "$SUCCESS$", strlen("$SUCCESS$"), 0);
 }
 
-// ... (other functions like view_files and download_file remain unchanged)
+void handle_download(int new_socket, char *command) {
+    char *file_name = strtok(command, "$");
+    file_name = strtok(NULL, "$");
+
+    char full_path[1024];
+    snprintf(full_path, sizeof(full_path), "./server_dir/%s", file_name);
+
+    // Try to open the file in read mode
+    FILE *file = fopen(full_path, "rb");
+    if (!file) {
+        send(new_socket, "$FAILURE$FILE_NOT_FOUND$", strlen("$FAILURE$FILE_NOT_FOUND$"), 0);
+        return;
+    }
+
+    // Send $SUCCESS$ to notify client that file transfer will begin
+    send(new_socket, "$SUCCESS$", strlen("$SUCCESS$"), 0);
+
+    // Introduce a small delay to allow the client to process the success message
+    usleep(100000);  // 100ms delay to ensure the client reads $SUCCESS$ before file data
+
+    char buffer[1024];
+    int bytes_read;
+
+    // Read the file and send it to the client in chunks
+    while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) {
+        send(new_socket, buffer, bytes_read, 0);  // Send file content
+    }
+
+    fclose(file);
+    shutdown(new_socket, SHUT_WR);  // Signal EOF and close the writing end of the socket
+}
 
 int main() {
     int server_fd, new_socket;
     struct sockaddr_in address;
     int addrlen = sizeof(address);
-    
-    // Initialize client info
+
     client.used_space = 0;
 
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
@@ -100,9 +132,9 @@ int main() {
 
         if (strncmp(command, "$UPLOAD$", 8) == 0) {
             handle_upload(new_socket, command);
+        } else if (strncmp(command, "$DOWNLOAD$", 10) == 0) {
+            handle_download(new_socket, command);
         }
-
-        // Handle other commands here (VIEW, DOWNLOAD, etc.)
 
         close(new_socket);
     }
