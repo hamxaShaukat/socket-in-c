@@ -35,6 +35,20 @@ void upload_file(int sock, const char *file_path) {
         printf("Server Response: %s\n", response);
     }
 }
+void view_files(int sock) {
+    char command[1024];
+    snprintf(command, sizeof(command), "$VIEW$");
+    send(sock, command, strlen(command), 0);
+
+    char response[1024] = {0};
+    read(sock, response, 1024);
+
+    if (strcmp(response, "$FAILURE$NO_CLIENT_DATA$") == 0) {
+        printf("No files found for the client.\n");
+    } else {
+        printf("Files:\n%s\n", response);
+    }
+}
 
 void download_file(int sock, const char *file_name) {
     char command[1024];
@@ -101,7 +115,7 @@ int main() {
     }
 
     char operation[10];
-    printf("Enter operation (upload/download): ");
+    printf("Enter operation (upload/download/view): ");
     fgets(operation, sizeof(operation), stdin);
     operation[strcspn(operation, "\n")] = 0;  // Remove the newline character
 
@@ -117,7 +131,10 @@ int main() {
         fgets(file_name, sizeof(file_name), stdin);
         file_name[strcspn(file_name, "\n")] = 0;  // Remove the newline character
         download_file(sock, file_name);
-    }
+    } else if (strcmp(operation, "view") == 0) {
+    view_files(sock);
+}
+
 
     close(sock);
     return 0;

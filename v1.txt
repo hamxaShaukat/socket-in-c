@@ -1,0 +1,1220 @@
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.
+Your code implements a simple client-server file transfer system using sockets in C. It includes functionality for both file uploads and downloads with some essential error handling. Here's a breakdown of the structure and how it works:
+
+### **Server-side Code:**
+1. **Imports and Definitions:**
+   - Includes standard libraries such as `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and others required for networking (`arpa/inet.h`) and file handling.
+   - Defines constants like `PORT` (server port) and `STORAGE_LIMIT` (10KB storage limit per client).
+
+2. **Data Structure:**
+   - `struct client_info` is defined to store the client's used space, allowing the server to track how much storage a client has consumed.
+
+3. **`handle_upload()` Function:**
+   - Receives a file path via the socket, checks if the client's storage limit has been reached, and if not, receives the file from the client.
+   - It creates a directory `./server_dir`, saves the file under that directory, and updates the client's used space.
+   - If storage exceeds `STORAGE_LIMIT` during the upload, the server sends a failure message.
+
+4. **`handle_download()` Function:**
+   - Receives a file name from the client and checks if the file exists in the `./server_dir`.
+   - If the file exists, it reads it in chunks and sends the content to the client.
+   - Uses a 100ms delay after sending the success message to ensure the client processes it before receiving the file data.
+
+5. **Main Function (Server):**
+   - Initializes the server, creates a socket, binds to the specified address (127.0.0.1) and port, and starts listening for incoming connections.
+   - Accepts client connections in a loop and calls either `handle_upload()` or `handle_download()` based on the received command from the client.
+
+### **Client-side Code:**
+1. **Imports and Definitions:**
+   - Similar to the server, it includes libraries like `stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, and `arpa/inet.h` for file handling and networking.
+
+2. **`upload_file()` Function:**
+   - Sends the upload command (`$UPLOAD$`) followed by the file path to the server.
+   - If the server responds with success, the file is opened and sent in chunks to the server.
+   - After finishing, it waits for the server's response, which could be success or failure due to low space.
+
+3. **`download_file()` Function:**
+   - Sends the download command (`$DOWNLOAD$`) followed by the file name to the server.
+   - If the file exists, the client receives and saves the file in the user's Downloads folder.
+   - The function ensures that the leftover part of the response (after the `$SUCCESS$` message) is handled before reading more data.
+
+4. **Main Function (Client):**
+   - Creates a socket and connects to the server on 127.0.0.1:14000.
+   - Asks the user to choose an operation (`upload` or `download`) and performs the corresponding file operation by calling `upload_file()` or `download_file()`.
+
+### **Code Flow:**
+1. **Server:**
+   - The server waits for incoming connections from clients.
+   - Based on the client command (`$UPLOAD$` or `$DOWNLOAD$`), it either receives and stores a file or reads and sends a file to the client.
+
+2. **Client:**
+   - The client connects to the server and either uploads a file (using `upload_file()`) or downloads a file (using `download_file()`).
+
+### **Error Handling and Enhancements:**
+- **Storage Limitation**: The server monitors the space used by each client and prevents further uploads if the limit is exceeded.
+- **File Path Validation**: It extracts the file name from the file path to store the file in the server's directory.
+- **Graceful Shutdown**: The client-side uses `shutdown()` to signal the end of file transfer and `close()` to release the socket.
+- **Feedback to Client**: The server provides meaningful responses like `$FAILURE$LOW_SPACE$` or `$FAILURE$FILE_NOT_FOUND$` to the client.
+  
+### **Possible Improvements:**
+1. **Concurrency Handling**: Currently, the server handles one connection at a time. Implementing multi-threading or `fork()` would allow handling multiple clients simultaneously.
+2. **Storage Limits for Multiple Clients**: The `client.used_space` is global, so it applies to all clients. Implementing a system to track each client separately (e.g., based on IP address or session) would enhance it.
+3. **Data Validation**: Add more checks to ensure the data sent by the client (such as the file path) is valid and doesn't lead to vulnerabilities.
+4. **Security**: Add encryption (e.g., TLS/SSL) for secure data transfer.

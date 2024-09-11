@@ -1,2 +1,8 @@
 ./server_dir
 /server_dir
+
+./server
+./client
+
+/client
+/server

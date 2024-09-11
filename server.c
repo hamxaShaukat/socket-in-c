@@ -13,6 +13,67 @@ struct client_info {
     int used_space;
 } client;
 
+
+#include <dirent.h>
+#include <sys/stat.h>
+#include <time.h>
+
+void handle_view(int new_socket) {
+    const char *dir = "./server_dir";
+    DIR *d;
+    struct dirent *dir_entry;
+    struct stat file_stat;
+    char file_info[1024] = {0};
+    char buffer[1024] = {0};
+
+    // Open the directory
+    if ((d = opendir(dir)) == NULL) {
+        send(new_socket, "$FAILURE$NO_CLIENT_DATA$", strlen("$FAILURE$NO_CLIENT_DATA$"), 0);
+        return;
+    }
+
+    int has_files = 0;
+
+    // Read through the directory entries
+    while ((dir_entry = readdir(d)) != NULL) {
+        // Skip "." and ".." entries
+        if (strcmp(dir_entry->d_name, ".") == 0 || strcmp(dir_entry->d_name, "..") == 0)
+            continue;
+
+        has_files = 1;  // Mark that there is at least one file
+
+        // Get the full file path
+        char full_path[1024];
+        snprintf(full_path, sizeof(full_path), "%s/%s", dir, dir_entry->d_name);
+
+        // Get file statistics
+        if (stat(full_path, &file_stat) == 0) {
+            // File name
+            snprintf(buffer, sizeof(buffer), "Name: %s, ", dir_entry->d_name);
+            strcat(file_info, buffer);
+
+            // File size
+            snprintf(buffer, sizeof(buffer), "Size: %ld bytes, ", file_stat.st_size);
+            strcat(file_info, buffer);
+
+            // Last modified time
+            struct tm *timeinfo = localtime(&file_stat.st_mtime);
+            char time_buf[64];
+            strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", timeinfo);
+            snprintf(buffer, sizeof(buffer), "Last Modified: %s\n", time_buf);
+            strcat(file_info, buffer);
+        }
+    }
+    closedir(d);
+
+    if (has_files) {
+        send(new_socket, file_info, strlen(file_info), 0);
+    } else {
+        send(new_socket, "$FAILURE$NO_CLIENT_DATA$", strlen("$FAILURE$NO_CLIENT_DATA$"), 0);
+    }
+}
+
+
 void handle_upload(int new_socket, char *command) {
     char *file_path = strtok(command, "$");
     file_path = strtok(NULL, "$");
@@ -21,7 +82,7 @@ void handle_upload(int new_socket, char *command) {
         send(new_socket, "$FAILURE$LOW_SPACE$", strlen("$FAILURE$LOW_SPACE$"), 0);
         return;
     }
-    
+
     send(new_socket, "$SUCCESS$", strlen("$SUCCESS$"), 0);
 
     char *base_name = strrchr(file_path, '/');
@@ -134,7 +195,10 @@ int main() {
             handle_upload(new_socket, command);
         } else if (strncmp(command, "$DOWNLOAD$", 10) == 0) {
             handle_download(new_socket, command);
-        }
+        } else if (strncmp(command, "$VIEW$", 6) == 0) {
+            handle_view(new_socket);
+}
+
 
         close(new_socket);
     }
