@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,7 +6,7 @@
 #include <arpa/inet.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-
+#include <pthread.h>
 #define PORT 14000
 #define STORAGE_LIMIT 10240  // 10 KB storage limit per client
 
@@ -151,6 +152,26 @@ void handle_download(int new_socket, char *command) {
     shutdown(new_socket, SHUT_WR);  // Signal EOF and close the writing end of the socket
 }
 
+void *client_handler(void *arg) {
+    int client_socket = *(int *)arg;
+    free(arg);  // Free the allocated memory
+
+    char command[1024] = {0};
+    read(client_socket, command, sizeof(command));
+
+    if (strncmp(command, "$UPLOAD$", 8) == 0) {
+        handle_upload(client_socket, command);
+    } else if (strncmp(command, "$DOWNLOAD$", 10) == 0) {
+        handle_download(client_socket, command);
+    } else if (strncmp(command, "$VIEW$", 6) == 0) {
+        handle_view(client_socket);
+    }
+
+    close(client_socket);
+    return NULL;
+}
+
+
 int main() {
     int server_fd, new_socket;
     struct sockaddr_in address;
@@ -158,6 +179,7 @@ int main() {
 
     client.used_space = 0;
 
+    // Create server socket
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("Socket failed");
         exit(EXIT_FAILURE);
@@ -167,12 +189,14 @@ int main() {
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(PORT);
     
+    // Bind the socket to the address
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
         perror("Bind failed");
         close(server_fd);
         exit(EXIT_FAILURE);
     }
     
+    // Listen for incoming connections
     if (listen(server_fd, 3) < 0) {
         perror("Listen failed");
         close(server_fd);
@@ -182,25 +206,24 @@ int main() {
     printf("Server is listening on 127.0.0.1:%d\n", PORT);
     
     while (1) {
+        // Accept a new client connection
         if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0) {
             perror("Accept failed");
             close(server_fd);
             exit(EXIT_FAILURE);
         }
 
-        char command[1024] = {0};
-        read(new_socket, command, 1024);
+        // Create a thread to handle the new client
+        pthread_t client_thread;
+        int *client_socket = malloc(sizeof(int));
+        *client_socket = new_socket;  // Pass client socket to thread
+        if (pthread_create(&client_thread, NULL, client_handler, client_socket) != 0) {
+            perror("Thread creation failed");
+            free(client_socket);
+        }
 
-        if (strncmp(command, "$UPLOAD$", 8) == 0) {
-            handle_upload(new_socket, command);
-        } else if (strncmp(command, "$DOWNLOAD$", 10) == 0) {
-            handle_download(new_socket, command);
-        } else if (strncmp(command, "$VIEW$", 6) == 0) {
-            handle_view(new_socket);
-}
-
-
-        close(new_socket);
+        // Detach the thread to clean up resources automatically when it finishes
+        pthread_detach(client_thread);
     }
 
     close(server_fd);
