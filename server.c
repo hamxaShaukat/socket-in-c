@@ -19,19 +19,6 @@ struct client_info {
 #include <sys/stat.h>
 #include <time.h>
 
-void display_progress_bar(float progress) {
-    int barWidth = 50;
-    printf("[");
-    int pos = barWidth * progress;
-    for (int i = 0; i < barWidth; ++i) {
-        if (i < pos) printf("=");
-        else if (i == pos) printf(">");
-        else printf(" ");
-    }
-    printf("] %d %%\r", (int)(progress * 100));
-    fflush(stdout);
-}
-
 void handle_view(int new_socket) {
     const char *dir = "./server_dir";
     DIR *d;
