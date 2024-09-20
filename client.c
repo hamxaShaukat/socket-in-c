@@ -3,8 +3,22 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-
+#include <sys/stat.h>
 #define PORT 14000
+
+
+void display_progress_bar(float progress) {
+    int barWidth = 50;
+    printf("[");
+    int pos = barWidth * progress;
+    for (int i = 0; i < barWidth; ++i) {
+        if (i < pos) printf("=");
+        else if (i == pos) printf(">");
+        else printf(" ");
+    }
+    printf("] %d %%\r", (int)(progress * 100));
+    fflush(stdout);
+}
 
 void upload_file(int sock, const char *file_path) {
     char command[1024];
@@ -20,11 +34,17 @@ void upload_file(int sock, const char *file_path) {
             perror("File open failed");
             return;
         }
+       struct stat st;
+        stat(file_path, &st);
+        long file_size = st.st_size;
+        long total_sent = 0;
 
         char buffer[1024];
         int bytes_read;
         while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) {
             send(sock, buffer, bytes_read, 0);
+             total_sent += bytes_read;
+            display_progress_bar((float)total_sent / file_size);
         }
 
         fclose(file);
@@ -73,16 +93,25 @@ void download_file(int sock, const char *file_name) {
             return;
         }
 
+        long file_size;
+        sscanf(response + 9, "%ld", &file_size);
+        long total_received = 0;
+
         printf("Downloading file: %s\n", file_path);
 
         char buffer[1024];
         // Handle file content separately after the $SUCCESS$ message
         memmove(buffer, response + 9, bytes_read - 9);  // Move leftover data after $SUCCESS$
         fwrite(buffer, 1, bytes_read - 9, file);
+         total_received += bytes_read - strlen("$SUCCESS$") - strlen(" ");
 
         // Read the rest of the file content from the socket
         while ((bytes_read = read(sock, buffer, sizeof(buffer))) > 0) {
             fwrite(buffer, 1, bytes_read, file);
+            total_received += bytes_read;
+
+            // Display progress bar
+            display_progress_bar((float)total_received / file_size);
         }
 
         fclose(file);
