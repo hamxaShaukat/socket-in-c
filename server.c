@@ -7,8 +7,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <pthread.h>
+#include <ctype.h>
 #define PORT 14000
-#define STORAGE_LIMIT 10240  // 10 KB storage limit per client
+#define STORAGE_LIMIT 1000000000 // 10 KB storage limit per client
 
 struct client_info {
     int used_space;
@@ -29,7 +30,7 @@ void handle_view(int new_socket) {
 
     // Open the directory
     if ((d = opendir(dir)) == NULL) {
-        send(new_socket, "$FAILURE$NO_CLIENT_DATA$", strlen("$FAILURE$NO_CLIENT_DATA$"), 0);
+        send(new_socket, "$FAILURE$NO_LIENT_DATA$", strlen("$FAILURE$NO_CLIENT_DATA$"), 0);
         return;
     }
 
@@ -73,7 +74,6 @@ void handle_view(int new_socket) {
         send(new_socket, "$FAILURE$NO_CLIENT_DATA$", strlen("$FAILURE$NO_CLIENT_DATA$"), 0);
     }
 }
-
 
 void handle_upload(int new_socket, char *command) {
     char *file_path = strtok(command, "$");
