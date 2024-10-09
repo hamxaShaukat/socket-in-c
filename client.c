@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>
+#include <ctype.h>
 #define PORT 14000
 
 
@@ -20,13 +21,76 @@ void display_progress_bar(float progress) {
     fflush(stdout);
 }
 
+
+char* rle_encrypt(const char* input_string) {
+    int length = strlen(input_string);
+    if (length == 0) return ""; 
+
+    char* output_string = malloc(2 * length + 1);
+    if (!output_string) return NULL; 
+
+    int j = 0; 
+    int i = 0;
+
+    while (i < length) {
+        int count = 1; 
+        while (i < length - 1 && input_string[i] == input_string[i + 1]) {
+            count++;
+            i++;
+        }
+        j += sprintf(&output_string[j], "%c%d", input_string[i], count);
+        i++;
+    }
+    
+    output_string[j] = '\0';
+    char* resized_output = realloc(output_string, j + 1); 
+
+    if (!resized_output) {
+        free(output_string); 
+        return NULL;
+    }
+    return resized_output;
+}
+
+char* rle_decode(const char* encoded_data) {
+   
+    char* decoded_data = malloc(1024 * 1024); 
+    if (!decoded_data) return NULL;
+
+    int i = 0, j = 0;
+
+    while (encoded_data[i] != '\0') {
+        char ch = encoded_data[i++];
+        int count = 0;
+
+        while (isdigit(encoded_data[i])) {
+            count = count * 10 + (encoded_data[i] - '0');
+            i++;
+        }
+
+        for (int k = 0; k < count; k++) {
+            decoded_data[j++] = ch;
+        }
+    }
+
+    decoded_data[j] = '\0'; // Null-terminate the decoded data
+    char* resized_output = realloc(decoded_data, j + 1); 
+
+    if (!resized_output) {
+        // free(output_string); 
+        return NULL;
+    }
+    return resized_output; // Resize to the actual size
+}
+
+
 void upload_file(int sock, const char *file_path) {
     char command[1024];
     snprintf(command, sizeof(command), "$UPLOAD$%s$", file_path);
     send(sock, command, strlen(command), 0);
 
     char response[1024] = {0};
-    read(sock, response, 1024);
+    read(sock, response, sizeof(response));
 
     if (strcmp(response, "$SUCCESS$") == 0) {
         FILE *file = fopen(file_path, "rb");
@@ -34,27 +98,50 @@ void upload_file(int sock, const char *file_path) {
             perror("File open failed");
             return;
         }
-       struct stat st;
+
+        struct stat st;
         stat(file_path, &st);
         long file_size = st.st_size;
         long total_sent = 0;
 
         char buffer[1024];
-        int bytes_read;
-        while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) {
-            send(sock, buffer, bytes_read, 0);
-             total_sent += bytes_read;
+        
+        // Read the file and encode it
+        while (1) {
+            int bytes_read = fread(buffer, 1, sizeof(buffer), file);
+            if (bytes_read <= 0) break; // End of file
+
+            // Encode the read data using RLE
+            char* encoded_data = rle_encrypt(buffer);
+            if (!encoded_data) {
+                perror("RLE encoding failed");
+                fclose(file);
+                return;
+            }
+
+            printf("Encoded Data: %s\n", encoded_data);
+            int encoded_length = strlen(encoded_data);
+            // Send the encoded data
+            send(sock, encoded_data, encoded_length, 0);
+            total_sent += encoded_length;
+
+            // Update progress bar
             display_progress_bar((float)total_sent / file_size);
+
+            // Free the encoded data
+            free(encoded_data);
         }
 
         fclose(file);
         shutdown(sock, SHUT_WR);  // Close the write end of the socket to signal completion
-        read(sock, response, 1024);
+        read(sock, response, sizeof(response));
         printf("Server Response: %s\n", response);
     } else {
         printf("Server Response: %s\n", response);
     }
 }
+
+
 void view_files(int sock) {
     char command[1024];
     snprintf(command, sizeof(command), "$VIEW$");
@@ -106,10 +193,20 @@ void download_file(int sock, const char *file_name) {
          total_received += bytes_read - strlen("$SUCCESS$") - strlen(" ");
 
         // Read the rest of the file content from the socket
-        while ((bytes_read = read(sock, buffer, sizeof(buffer))) > 0) {
-            fwrite(buffer, 1, bytes_read, file);
-            total_received += bytes_read;
+        while ((bytes_read = read(sock, buffer, sizeof(buffer))) > 0)
+        {
+            char* decoded_data = rle_decode(buffer);
+            if (!decoded_data) {
+                perror("RLE Decoding failed");
+                break;
+            }
 
+            printf("Decoded Data: %s\n", decoded_data);
+            int decoded_length = strlen(decoded_data); // Get length of decoded data
+            fwrite(decoded_data, 1, decoded_length, file); // Write decoded data
+            total_received += decoded_length;
+
+            free(decoded_data);
             // Display progress bar
             display_progress_bar((float)total_received / file_size);
         }
